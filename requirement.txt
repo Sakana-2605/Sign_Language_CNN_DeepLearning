@@ -1,8 +1,0 @@
-opencv-python
-mediapipe==0.10.9
-scikit-learn
-keras
-matplotlib
-tensorflow==2.12.0
-protobuf==3.20.3
-pandas
