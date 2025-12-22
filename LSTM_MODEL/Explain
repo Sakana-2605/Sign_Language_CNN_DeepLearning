@@ -1,0 +1,18 @@
+hello
+hello Huy
+
+CHIẾN THUẬT TRAIN MODEL NHẬN BIẾT KÍ TỰ CÓ DẤU
+
+NAM đã có data của các dấu "Â", "Ơ", "Ă"
+bây giờ để máy hiểu được các dấu sắc, huyền, hỏi, ngã, nặng
+thì phải thu data dạng động và dùng model LSTM song song với 2 model Huy làm :))))
+
+nói chung chiến thuật dại khái là như vậy
+
+HUY xem xem có hợp lý không chứ CNN thì detect được ảnh tĩnh thôi hay sao ấy, mà các dấu thanh này thì kiểu mình sẽ
+làm động tác trên không chứ không giữ tay như các kí tự khác
+
+coi video này cho hiểu what i mean:
+https://youtu.be/qbunwMeiwbg?si=D4jiDJmI-UcxuLTA (phút 1:26)
+
+Count on u, my pal :)))
