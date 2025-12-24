@@ -20,7 +20,7 @@ CLASSES = ['A', 'B', 'U', 'O', 'MU', 'MOC', 'SAC', 'HUYEN', 'NANG', 'HOI', 'NGA'
 VIETNAMESE_LOGIC = {
     # Tầng 1: Chữ cái đơn + Chữ cái có dấu mũ
     ('U', 'MOC'): 'Ư', ('O', 'MOC'): 'Ơ', ('O', 'MU'): 'Ô',
-    ('A', 'MU'): 'Â', ('E', 'MU'): 'Ê', ('A', 'TRANG'): 'Ă', ('D', 'GACH'): 'Đ',
+    ('A', 'MU'): 'Â', ('E', 'MU'): 'Ê', ('A', 'TRANG'): 'Ă', ('DD'): 'Đ',
     
     # Tầng 2: Chữ cái đôi có dấu mũ + Dấu thanh
     ('Ư', 'NANG'): 'Ự', ('Ư', 'SAC'): 'Ứ', ('Ư', 'HUYEN'): 'Ừ', ('Ư', 'HOI'): 'Ử', ('Ư', 'NGA'): 'Ữ',
