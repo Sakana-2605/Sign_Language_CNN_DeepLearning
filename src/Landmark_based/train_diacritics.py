@@ -6,7 +6,7 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout
 from tensorflow.keras.utils import to_categorical
 
 # --- 1. CẤU HÌNH ---
-DATA_FILE = "data/sequence_data.csv"
+DATA_FILE = "data/diacritics_data.csv"
 SEQUENCE_LENGTH = 30  # Phải khớp với lúc thu thập
 NUM_FEATURES = 42    # 21 landmarks * 2 (x, y)
 

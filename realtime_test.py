@@ -14,7 +14,10 @@ os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 MODEL_CNN_PATH = 'models/sign_language_model.h5'
 MODEL_LANDMARK_PATH = 'models/keypoint_classifier.h5'
 # Danh sách nhãn (Phải khớp với file classes.npy khi train)
-CLASSES = ['A', 'B', 'U', 'O', 'MU', 'MOC', 'SAC', 'HUYEN', 'NANG', 'HOI', 'NGA', 'TRANG', 'None'] 
+CLASSES = ['A','B','C','D','DD','E','G',
+           'H','I','K','L','M','N','O','P',
+           'Q','R','S','T','U','V','X',
+           'Y','MOC','MU','TRANG','None'] 
 
 # BẢNG TRA CỨU TELEX NÂNG CAO (Xử lý dấu chồng dấu)
 VIETNAMESE_LOGIC = {

@@ -6,7 +6,10 @@ import pandas as pd
 # --- CẤU HÌNH ---
 DATA_FILE = "data/keypoints.csv"
 MODEL_SAVE_PATH = 'models/keypoint_classifier.h5'
-CLASSES = ['A', 'B', 'None'] 
+CLASSES = ['A','B','C','D','DD','E','G',
+           'H','I','K','L','M','N','O','P',
+           'Q','R','S','T','U','V','X',
+           'Y','MOC','MU','TRANG','None'] 
 
 def main():
     # 1. Đọc dữ liệu
