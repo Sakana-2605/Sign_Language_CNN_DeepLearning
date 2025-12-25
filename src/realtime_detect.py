@@ -5,10 +5,8 @@ import tensorflow as tf
 import copy
 import itertools
 import time
-import os
 
-# --- CẤU HÌNH QUAN TRỌNG CHO GPU ---
-# Ép TensorFlow sử dụng GPU nếu có, và tránh lỗi chiếm dụng toàn bộ VRAM
+import os
 os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
 gpus = tf.config.list_physical_devices('GPU')
@@ -23,8 +21,7 @@ if gpus:
         print(e)
 else:
     print("❌ CẢNH BÁO: Không tìm thấy GPU, hệ thống sẽ chạy chậm trên CPU!")
-
-# --- CẤU HÌNH FILE PATH ---
+# --- CẤU HÌNH ---
 MODEL_CNN_PATH = 'models/sign_language_model.h5'
 MODEL_LANDMARK_PATH = 'models/keypoint_classifier.h5'
 CLASSES = ['A','B','C','D','DD','E','G',
@@ -32,24 +29,24 @@ CLASSES = ['A','B','C','D','DD','E','G',
            'Q','R','S','T','U','V','X',
            'Y','MOC','MU','TRANG','None'] 
 
-# TỐI ƯU TỐC ĐỘ
+# TỐI ƯU TỐC ĐỘ: Chỉ predict mỗi 5 frame 
 SKIP_FRAMES = 5 
-WEIGHT_LANDMARK = 0
-WEIGHT_CNN = 1
-CONFIDENCE_THRESHOLD = 0.7
+
+# TRỌNG SỐ 
+WEIGHT_LANDMARK = 0.3
+WEIGHT_CNN = 0.7
+CONFIDENCE_THRESHOLD = 0.65
 
 # --- LOAD MODELS ---
 print("⏳ Đang load models...")
-# Load model (TensorFlow sẽ tự động đẩy model này vào GPU sau bước config ở trên)
 model_cnn = tf.keras.models.load_model(MODEL_CNN_PATH)
 model_landmark = tf.keras.models.load_model(MODEL_LANDMARK_PATH)
-print("✅ Models đã sẵn sàng trên GPU!")
+print("✅ Sẵn sàng!")
 
 mp_hands = mp.solutions.hands
-# Lưu ý: MediaPipe Hand Tracking trên Windows Python vẫn chạy chủ yếu bằng CPU
 hands = mp_hands.Hands(max_num_hands=1, min_detection_confidence=0.7)
 
-# --- CÁC HÀM HỖ TRỢ ---
+# --- HÀM HỖ TRỢ ---
 def calc_landmark_list(image, landmarks):
     image_width, image_height = image.shape[1], image.shape[0]
     landmark_point = []
@@ -85,13 +82,10 @@ def get_bbox(landmark_list, h, w, padding=20):
 cap = cv2.VideoCapture(0)
 frame_count = 0
 
+# Biến lưu kết quả cũ để hiển thị trong lúc skip frame
 current_label = "..."
 current_color = (0, 0, 255)
 current_confidence = 0.0
-
-# Biến đo FPS
-prev_frame_time = 0
-new_frame_time = 0
 
 while True:
     ret, frame = cap.read()
@@ -101,48 +95,42 @@ while True:
     h, w, _ = frame.shape
     
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    
-    # MediaPipe xử lý (CPU)
     results = hands.process(rgb_frame)
 
     if results.multi_hand_landmarks:
         for hand_landmarks in results.multi_hand_landmarks:
             
+            # Vẽ khung xương luôn cho ngầu
             mp.solutions.drawing_utils.draw_landmarks(debug_image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
             
+            # --- LOGIC SKIP FRAME ---
             frame_count += 1
             if frame_count % SKIP_FRAMES != 0:
-                # Skip detection, vẽ lại kết quả cũ
-                if current_confidence > 0: # Chỉ vẽ nếu đã có kết quả
-                    landmark_list = calc_landmark_list(debug_image, hand_landmarks)
-                    x1, y1, x2, y2, _ = get_bbox(landmark_list, h, w, padding=30)
-                    cv2.rectangle(debug_image, (x1, y1), (x2, y2), current_color, 2)
-                    cv2.putText(debug_image, f"{current_label} ({current_confidence*100:.0f}%)", 
-                               (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, current_color, 2)
-                
-                # Hiển thị FPS
-                new_frame_time = time.time()
-                fps = 1/(new_frame_time-prev_frame_time)
-                prev_frame_time = new_frame_time
-                cv2.putText(debug_image, f"FPS: {int(fps)}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
-                
-                cv2.imshow('Final System (GPU Enabled)', debug_image)
+                # Nếu đang trong giai đoạn skip, vẽ lại kết quả cũ và bỏ qua tính toán
+                landmark_list = calc_landmark_list(debug_image, hand_landmarks)
+                x1, y1, x2, y2, _ = get_bbox(landmark_list, h, w, padding=30)
+                cv2.rectangle(debug_image, (x1, y1), (x2, y2), current_color, 2)
+                cv2.putText(debug_image, f"{current_label} ({current_confidence*100:.0f}%)", 
+                           (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, current_color, 2)
+                cv2.imshow('Final System', debug_image)
                 if cv2.waitKey(1) == ord('q'): exit()
                 continue
             
-            # --- TÍNH TOÁN TRÊN GPU ---
+            # --- BẮT ĐẦU TÍNH TOÁN (Chỉ chạy mỗi 5 frame 1 lần) ---
+            
+            # 1. Landmark Model
             landmark_list = calc_landmark_list(debug_image, hand_landmarks)
             pre_processed_landmark = pre_process_landmark(landmark_list)
             input_landmark = np.array([pre_processed_landmark], dtype=np.float32)
-            
-            # Predict Landmark
             scores_landmark = model_landmark.predict(input_landmark, verbose=0)[0]
 
-            # Predict CNN
+            # 2. CNN Model
             x1, y1, x2, y2, size = get_bbox(landmark_list, h, w, padding=30)
             roi_square = np.zeros((size, size, 3), dtype=np.uint8)
             src_x1, src_y1 = max(0, x1), max(0, y1)
             src_x2, src_y2 = min(w, x2), min(h, y2)
+            
+            scores_cnn = np.zeros(len(CLASSES))
             
             if (src_x2 > src_x1) and (src_y2 > src_y1):
                 crop = frame[src_y1:src_y2, src_x1:src_x2]
@@ -153,33 +141,29 @@ while True:
                 img_input = cv2.cvtColor(img_input, cv2.COLOR_BGR2RGB)
                 img_input = np.expand_dims(img_input, axis=0)
                 
-                # Predict CNN (Hàm này sẽ chạy trên GPU)
+                # --- SỬA LỖI Ở ĐÂY: KHÔNG GỌI preprocess_input NỮA ---
+                # Vì trong model.h5 đã có lớp đó rồi
                 scores_cnn = model_cnn.predict(img_input, verbose=0)[0]
-            else:
-                scores_cnn = np.zeros(len(CLASSES))
 
+            # 3. Kết hợp
             final_scores = (scores_landmark * WEIGHT_LANDMARK) + (scores_cnn * WEIGHT_CNN)
             class_id = np.argmax(final_scores)
             current_confidence = final_scores[class_id]
             current_label = CLASSES[class_id]
 
+            # Cập nhật màu sắc dựa trên kết quả mới
             if current_confidence > CONFIDENCE_THRESHOLD:
-                current_color = (0, 255, 0)
+                current_color = (0, 255, 0) # Xanh
             else:
                 current_label = "..."
-                current_color = (0, 0, 255)
+                current_color = (0, 0, 255) # Đỏ
 
+            # Vẽ kết quả mới
             cv2.rectangle(debug_image, (x1, y1), (x2, y2), current_color, 2)
             cv2.putText(debug_image, f"{current_label} ({current_confidence*100:.0f}%)", 
                         (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, current_color, 2)
 
-    # Tính FPS
-    new_frame_time = time.time()
-    fps = 1/(new_frame_time-prev_frame_time)
-    prev_frame_time = new_frame_time
-    cv2.putText(debug_image, f"FPS: {int(fps)}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
-
-    cv2.imshow('Final System (GPU Enabled)', debug_image)
+    cv2.imshow('Final System', debug_image)
     if cv2.waitKey(1) == ord('q'):
         break
 

@@ -41,7 +41,7 @@ def main():
     # 4. Training
     model.fit(
         X_train, y_train,
-        epochs=100,             # Train 50 vòng (rất nhanh)
+        epochs=25,             # Train 50 vòng (rất nhanh)
         batch_size=32,
         validation_data=(X_test, y_test)
     )
